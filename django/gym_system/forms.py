@@ -1,4 +1,7 @@
 from django import forms
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class LoginForm(forms.Form):
@@ -16,3 +19,40 @@ class LoginForm(forms.Form):
             attrs={"placeholder": "Password", "class": "form-control"}
         ),
     )
+
+
+class ProfileForm(forms.ModelForm):
+    password = forms.CharField(
+        required=False,
+        widget=forms.PasswordInput(attrs={"class": "form-control"}),
+        label="Password",
+        help_text="Leave blank if you don't want to change it.",
+    )
+    profile_pic = forms.ImageField(required=False, label="Profile Picture")
+
+    class Meta:
+        model = User
+        fields = ["first_name", "email", "phone", "profile_picture"]
+
+        widgets = {
+            "first_name": forms.TextInput(
+                attrs={"class": "form-control", "id": "first_name"}
+            ),
+            "email": forms.EmailInput(attrs={"class": "form-control", "id": "email"}),
+            "phone": forms.TextInput(attrs={"class": "form-control", "id": "phone"}),
+        }
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        password = self.cleaned_data.get("password")
+        if password:
+            user.set_password(password)
+
+        # Handle profile picture upload
+        profile_pic = self.cleaned_data.get("profile_pic")
+        if profile_pic:
+            user.profile_picture = profile_pic
+
+        if commit:
+            user.save()
+        return user

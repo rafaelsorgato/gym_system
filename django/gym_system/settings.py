@@ -27,10 +27,14 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+AUTH_USER_MODEL = "gym_system.Users"
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 # Application definition
-
 INSTALLED_APPS = [
+    "gym_system",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
