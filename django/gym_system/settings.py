@@ -27,7 +27,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-AUTH_USER_MODEL = "gym_system.Users"
+AUTH_USER_MODEL = "gym_system.Employees"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"

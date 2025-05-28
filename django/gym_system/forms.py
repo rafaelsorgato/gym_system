@@ -1,8 +1,10 @@
+import re
+
 from django import forms
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 
 User = get_user_model()
-
 
 class LoginForm(forms.Form):
     username = forms.CharField(
@@ -30,6 +32,18 @@ class ProfileForm(forms.ModelForm):
     )
     profile_pic = forms.ImageField(required=False, label="Profile Picture")
 
+    first_name = forms.CharField(
+        required=True,
+        widget=forms.TextInput(attrs={"class": "form-control", "id": "first_name"}),
+        label="Name",
+    )
+
+    email = forms.EmailField(
+        required=True,
+        widget=forms.EmailInput(attrs={"class": "form-control", "id": "email"}),
+        label="Email",
+    )
+
     class Meta:
         model = User
         fields = ["first_name", "email", "phone", "profile_picture"]
@@ -42,13 +56,21 @@ class ProfileForm(forms.ModelForm):
             "phone": forms.TextInput(attrs={"class": "form-control", "id": "phone"}),
         }
 
+    def clean_password(self):
+        password = self.cleaned_data.get("password")
+        if password:
+            if len(password) < 10 or not re.search(r"[!@#$%&*]", password):
+                raise ValidationError(
+                    "Password must be at least 10 characters long and contain special characters [!@#$%&*]."
+                )
+        return password
+
     def save(self, commit=True):
         user = super().save(commit=False)
         password = self.cleaned_data.get("password")
         if password:
             user.set_password(password)
 
-        # Handle profile picture upload
         profile_pic = self.cleaned_data.get("profile_pic")
         if profile_pic:
             user.profile_picture = profile_pic

@@ -1,6 +1,6 @@
-{% extends 'base.html' %}
-{% block title %}Profile{% endblock %}
-{% block dashboard_name %}Profile{% endblock %}
+2{% extends 'base.html' %}
+{% block title %}Clients manager{% endblock %}
+{% block dashboard_name %}Clients manager{% endblock %}
 {% block body %}
 
 <div class="container py-5">
@@ -8,9 +8,17 @@
         <div class="col-md-10 col-lg-8">
             <div class="card shadow-lg border-0 rounded-4">
                 <div class="card-body p-5">
-                    <h2 class="text-center mb-4 text-primary">User Profile</h2>
+                    <h2 class="text-center mb-4 text-primary">Clients Profiles</h2>
+                    <select name="selected_user" id="userSelect" class="form-select">
+                        {% for client in Clients %}
+                            <option value="{{ client.id }}" {% if client.id == request.user.id %}selected{% endif %}>
+                                {{ client.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
+                        <input type="hidden" id="user_id" name="user_id" value="{{ request.user.id }}">
                         <div class="row">
                             <!-- Column 1 -->
                             <div class="col-md-6">
@@ -23,7 +31,6 @@
                                     <input type="text" class="form-control" value="{{ user.username }}" id="username" name="username" disabled>
                                 </div>
                             </div>
-
                             <!-- Column 2 -->
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -48,13 +55,12 @@
                             </div>
                             <div class="col-md-6 offset-md-3" style="margin-top: 20px;">
                                 <div class="mb-3 text-center">
-                                    <img src="{{ user.profile_picture.url }}" alt="Profile Picture" class="img-fluid rounded-circle mb-3" style="width: 150px; height: 150px;">
+                                    <img id='profile_picture' src="{{ user.profile_picture.url }}" alt="Profile Picture" class="img-fluid rounded-circle mb-3" style="width: 150px; height: 150px;">
                                     <input type="file" class="form-control" id="profile_pic" name="profile_pic" accept="image/*">
                                     <label for="profile_pic" class="form-label">Profile Picture</label>
                                 </div>
                             </div>
                         </div>
-
                         <div class="d-grid mt-4 offset-md-5">
                             <button type="submit" class="btn btn-primary btn-lg">Update</button>
                         </div>
@@ -64,5 +70,41 @@
         </div>
     </div>
 </div>
+
+<script>
+    const usersData = {
+        {% for user in Users %}
+            "{{ user.id }}": {
+                "first_name": "{{ user.first_name|escapejs }}",
+                "username": "{{ user.username|escapejs }}",
+                "email": "{{ user.email|escapejs }}",
+                "phone": "{{ user.phone|escapejs }}",
+                "profile_picture": "{{ user.profile_picture.url|escapejs }}"
+            },
+        {% endfor %}
+    };
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const userSelect = document.getElementById('userSelect');
+
+        userSelect.addEventListener('change', function () {
+            const selectedId = this.value;
+            const user = usersData[selectedId];
+
+            if (user) {
+                document.getElementById('first_name').value = user.first_name;
+                document.getElementById('username').value = user.username;
+                document.getElementById('email').value = user.email;
+                document.getElementById('phone').value = user.phone;
+                document.getElementById('profile_picture').src = user.profile_picture;
+            }
+            document.getElementById('user_id').value = selectedId;
+
+        });
+    });
+
+</script>
+
 
 {% endblock %}

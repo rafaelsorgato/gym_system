@@ -56,23 +56,19 @@
                 </a>
                 <div id="collapsePages" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
-                        <h6 class="collapse-header">Login Screens:</h6>
-                        <a class="collapse-item" href="login.html">Login</a>
-                        <a class="collapse-item" href="register.html">Register</a>
-                        <a class="collapse-item" href="forgot-password.html">Forgot Password</a>
-                        <div class="collapse-divider"></div>
-                        <h6 class="collapse-header">Other Pages:</h6>
-                        <a class="collapse-item" href="404.html">404 Page</a>
-                        <a class="collapse-item" href="blank.html">Blank Page</a>
+                    <a class="collapse-item" href="{% url 'clients_manager' %}">Create/delete client</a>
+                    <a class="collapse-item" href="{% url 'employees_manager' %}">Create/delete employee</a>
+                        <a class="collapse-item" href="register.html">Edit a user</a>
+                        <a class="collapse-item" href="register.html">Edit a employee</a>
                     </div>
                 </div>
             </li>
 
-            <!-- Nav Item - Charts -->
+            <!-- Nav Item - Plans -->
             <li class="nav-item">
-                <a class="nav-link" href="charts.html">
+                <a class="nav-link" href="{% url 'plans' %}">
                     <i class="fas fa-fw fa-chart-area"></i>
-                    <span>Charts</span></a>
+                    <span>Plans</span></a>
             </li>
 
             <!-- Nav Item - Tables -->
@@ -154,10 +150,12 @@
                                     <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
                                     Profile
                                 </a>
-                                <a class="dropdown-item" href="#">
+                                {% if user.is_superuser %}
+                                <a class="dropdown-item" href="{% url 'clients_manager'%}">
                                     <i class="fas fa-cogs fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    Settings
+                                    Users Manager
                                 </a>
+                                {% endif %}
                                 <a class="dropdown-item" href="#">
                                     <i class="fas fa-list fa-sm fa-fw mr-2 text-gray-400"></i>
                                     Activity Log
