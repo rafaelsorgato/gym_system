@@ -20,11 +20,8 @@ class Clients(models.Model):
     phone = models.CharField(max_length=20, blank=True, null=True)
     join_date = models.DateField(auto_now_add=True)
     active = models.BooleanField(default=True)
-    profile_picture = models.ImageField(
-        upload_to=profile_picture_upload_path,
-        default="profile_picture/default.png",
-    )
-    plan_id = models.ForeignKey(Plans, on_delete=models.CASCADE)
+    profile_picture = models.ImageField()
+    plan = models.ForeignKey(Plans, on_delete=models.CASCADE)
 
 
 class Employees(AbstractUser):

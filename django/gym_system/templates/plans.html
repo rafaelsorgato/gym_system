@@ -9,15 +9,16 @@
             <div class="card shadow-lg border-0 rounded-4">
                 <div class="card-body p-5">
                     <h2 class="text-center mb-4 text-primary">Plans</h2>
-
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
-                        <input type="hidden" id="plan_id" name="plan_id" value="{{ request.plan.id }}">
                         <div class='row'>
                             <div class="col-md-12">
                                 <div class="mb-8" style="align-items: center;">
                                     <select name="" id="plan_selector" class="form-control mx-auto d-block" style="width: 50%;">
                                         <option value="">Create a new plan</option>
+                                        {% for plan in plans %}
+                                        <option value="{{ plan.id }}">{{ plan.name }}</option>
+                                        {% endfor %}
                                     </select>                        
                                 </div>
                                  <br>
@@ -27,14 +28,14 @@
                             <!-- Column 1 -->
                             <div class="col-md-4">
                                 <div class="mb-4">
-                                    <label for="plan_name" class="form-label">Plan name</label>
-                                    <input type="text" class="form-control" value="{{ user.first_name }}" id="plan_name" name="plan_name" required>
+                                    <label for="name" class="form-label">Plan name</label>
+                                    <input type="text" class="form-control" value="" id="name" name="name" required>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="mb-4">
                                     <label for="price" class="form-label">Price</label>
-                                    <input step="0.01" type="number" class="form-control" value="{{ user.username }}" id="price" name="price" required>
+                                    <input step="0.01" type="number" class="form-control" value="" id="price" name="price" required>
                                 </div>
                             </div>
                             <div class="col-md-4">
@@ -64,8 +65,10 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="d-grid mt-4 offset-md-5">
-                            <button class="btn btn-primary btn-lg" id="update">Update</button>
+                        <div id="feedback-message" class="alert d-none text-center" role="alert"></div>
+                        <div class="d-flex justify-content-center mt-4 gap-3">
+                            <button class="btn btn-primary btn-lg" id="update">Create</button>
+                            <button class="btn btn-danger btn-lg d-none" id="delete">Delete</button>
                         </div>
                     </form>
                 </div>
@@ -75,72 +78,122 @@
 </div>
 
 <script>
-    const usersData = {
-        {% for user in Users %}
-            "{{ user.id }}": {
-                "first_name": "{{ user.first_name|escapejs }}",
-                "username": "{{ user.username|escapejs }}",
-                "email": "{{ user.email|escapejs }}",
-                "phone": "{{ user.phone|escapejs }}",
-                "profile_picture": "{{ user.profile_picture.url|escapejs }}"
+    const plansData = {
+        {% for plan in plans %}
+            "{{ plan.id }}": {
+                "name": "{{ plan.name|escapejs }}",
+                "price": "{{ plan.price|escapejs }}",
+                "duration": "{{ plan.duration|escapejs }}",
+                "description": "{{ plan.description|escapejs }}"
             },
         {% endfor %}
     };
 </script>
 <script>
-    const selector = document.getElementById('update');
-    selector.addEventListener('click', function (event) {
-        event.preventDefault();
-        const selectedId = this.value;
-        if (selectedId != "") {
-            console.log("fix here");
-        }
-        else{
-            var plan_name = document.getElementById('plan_name').value;
-            var price = document.getElementById('price').value;
-            var duration = document.getElementById('duration').value;
-            var description = document.getElementById('description').value;
+const planSelector = document.getElementById('plan_selector');
 
-            fetch('/plans', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: JSON.stringify({
-                    'plan_name': plan_name,
-                    'price': price,
-                    'duration': duration,
-                    'description': description
-                })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    console.log(data);
-                    window.location.href = '/plans/';
-                })
-        }
+planSelector.addEventListener('change', function () {
+    const selectedId = this.value;
+    const plan = plansData[selectedId];
+    if (selectedId === ""){
+        document.getElementById('update').textContent = "Create";
+        document.getElementById('delete').classList.add('d-none');
+    } else {
+        document.getElementById('update').textContent = "Update";
+        document.getElementById('delete').classList.remove('d-none');
+    }
+    if (plan) {
+        document.getElementById('name').value = plan.name;
+        document.getElementById('price').value = plan.price;
+        document.getElementById('duration').value = plan.duration;
+        document.getElementById('description').value = plan.description;
+    }else{
+        document.getElementById('name').value = '';
+        document.getElementById('price').value = '';
+        document.getElementById('duration').value = '';
+        document.getElementById('description').value = '';
+    }
+});
 
-    });
-
-    document.addEventListener('DOMContentLoaded', function () {
-        const userSelect = document.getElementById('userSelect');
-
-        userSelect.addEventListener('change', function () {
-            const selectedId = this.value;
-            const user = usersData[selectedId];
-
-            if (user) {
-                document.getElementById('first_name').value = user.first_name;
-                document.getElementById('username').value = user.username;
-                document.getElementById('email').value = user.email;
-                document.getElementById('phone').value = user.phone;
-                document.getElementById('profile_picture').src = user.profile_picture;
+const deleteButton = document.getElementById('delete');
+deleteButton.addEventListener('click', function (event) {
+    event.preventDefault();
+    const confirmed = confirm("Are you sure you want to delete this plan?");
+    if (!confirmed) return;
+    const id = document.getElementById('plan_selector').value;
+    fetch('/plans', {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            'id': id
+        })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showFeedbackMessage('Plan deleted successfully', true);
+                document.getElementById('plan_selector').removeChild(document.querySelector(`option[value="${id}"]`));
+                planSelector.value = '';
+                document.getElementById('name').value = '';
+                document.getElementById('price').value = '';
+                document.getElementById('duration').value = '';
+                document.getElementById('description').value = '';
+                document.getElementById('update').textContent = "Create";
+                document.getElementById('delete').classList.add('d-none');
+            } else {
+                showFeedbackMessage('Error while deleting', false);
             }
-            document.getElementById('user_id').value = selectedId;
+        })
+})
 
-        });
+const updateButton = document.getElementById('update');
+updateButton.addEventListener('click', function (event) {
+    event.preventDefault();
+
+    var id = document.getElementById('plan_selector').value;
+    var name = document.getElementById('name').value;
+    var price = document.getElementById('price').value;
+    var duration = document.getElementById('duration').value;
+    var description = document.getElementById('description').value;
+
+    fetch('/plans', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            'id': id,
+            'name': name,
+            'price': price,
+            'duration': duration,
+            'description': description
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        showFeedbackMessage(data.message, data.success);
+        setTimeout(() => {
+            location.reload();
+        }, 5000);
+    })
+    .catch(error => {
+        showFeedbackMessage("Error while updating/creating plan.", false);
     });
+});
+
+function showFeedbackMessage(message, success) {
+    const messageBox = document.getElementById('feedback-message');
+    messageBox.className = `alert text-center ${success ? 'alert-success' : 'alert-danger'}`;
+    messageBox.textContent = message;
+    messageBox.classList.remove('d-none');
+    setTimeout(() => {
+        messageBox.classList.add('d-none');
+    }, 5000);
+}
 
 </script>
 
