@@ -36,7 +36,6 @@ class Employees(AbstractUser):
     function = models.IntegerField(choices=FUNCTION_CHOICES, default=1)
     permission_level = models.IntegerField(choices=PERMISSIONS_LEVEL_CHOICES, default=1)
     profile_picture = models.ImageField(
-        upload_to=profile_picture_upload_path,
         default="profile_picture/default.png",
     )
 

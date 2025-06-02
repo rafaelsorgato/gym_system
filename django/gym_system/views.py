@@ -48,17 +48,68 @@ def logout(request):
 
 @login_required(login_url="login")
 def profile(request):
+    import os
+
+    from .settings import MEDIA_ROOT, MEDIA_URL
+
     user = request.user
-    form = ProfileForm(request.POST, request.FILES, instance=user)
+
     if request.method == "POST":
-        if form.is_valid():
-            updated_user = form.save()
-            update_session_auth_hash(request, updated_user)
-            return redirect("profile")
-        else:
-            print("Invalid data")
+        data = request.POST
+        files = request.FILES
+        user_id = user.id
+        name = data.get("name")
+        email = data.get("email")
+        phone = data.get("phone")
+        password = data.get("password")
+        profile_pic = files.get("profile_pic")
+
+        user_obj = Employees.objects.filter(id=user_id).first()
+
+        if password:
+            if len(password) < 10 or not re.search(r"[!@#$%&*]", password):
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "message": "Password must be at least 10 characters long and contain special characters [!@#$%&*].",
+                    }
+                )
+            else:
+                user_obj.password = make_password(password)
+        if not name or not email:
+            return JsonResponse(
+                {"success": False, "message": "Name and email are required."}
+            )
+
+        user.name = name
+        user.email = email
+        user.phone = phone
+        user.save()
+        if profile_pic:
+            folder = f"profile_picture/user_{user.id}"
+            image_name = f"{folder}/profile_pic.jpg"
+
+            if user.profile_picture and default_storage.exists(
+                user.profile_picture.name
+            ):
+                if user.profile_picture != "profile_picture/default.png":
+                    default_storage.delete(user.profile_picture.name)
+
+            saved_path = default_storage.save(image_name, profile_pic)
+            user.profile_picture = saved_path
+            user.save()
+        update_session_auth_hash(request, user)
+        return JsonResponse(
+            {
+                "success": True,
+                "message": "Data updated, reloading the page...",
+            }
+        )
+
     return render(
-        request, "profile.html", {"app_name": app_name, "form": form, "user": user}
+        request,
+        "profile.html",
+        {"user": user, "MEDIA_URL": MEDIA_URL},
     )
 
 
@@ -80,11 +131,10 @@ def clients_manager(request):
     from .settings import MEDIA_ROOT, MEDIA_URL
 
     user = request.user
-    if user.permission_level != 2:
+    if user.permission_level != 1 and user.permission_level != 3:
         return redirect("home")  # TODO: return permission denied
 
     if request.method == "POST":
-        # Usar POST e FILES para processar os dados e arquivos enviados via FormData
         data = request.POST
         files = request.FILES
         user_id = data.get("user_id")
@@ -92,15 +142,13 @@ def clients_manager(request):
         email = data.get("email")
         phone = data.get("phone")
         plan_id = data.get("plan")
-        situation = data.get("situation")  # opcional, conforme seu modelo
+        situation = data.get("situation")
         password = data.get("password")
 
         profile_pic = files.get("profile_pic")
 
-        # Obter ou criar cliente
         user_obj = Clients.objects.filter(id=user_id).first() if user_id else Clients()
 
-        # Validação de senha
         if password:
             if len(password) < 10 or not re.search(r"[!@#$%&*]", password):
                 return JsonResponse(
@@ -117,13 +165,11 @@ def clients_manager(request):
                 {"success": False, "message": "You must provide a password."}
             )
 
-        # Validação de nome e email
         if not name or not email:
             return JsonResponse(
                 {"success": False, "message": "Name and email are required."}
             )
 
-        # Atualização de dados
         user_obj.name = name
         user_obj.email = email
         user_obj.phone = phone
@@ -146,17 +192,6 @@ def clients_manager(request):
         else:
             user_obj.profile_picture = "profile_picture/default.png"
         user_obj.save()
-
-        # Processar imagem
-        # if profile_pic:
-        #     profile_pic.name = f"profile_pic_{user_obj.id or user_id}.jpg"
-        #     if user_obj.profile_picture and default_storage.exists(
-        #         user_obj.profile_picture.name
-        #     ):
-        #         default_storage.delete(user_obj.profile_picture.name)
-        #     user_obj.profile_picture = profile_pic
-        # elif not user_obj.profile_picture:
-        #     user_obj.profile_picture = "/default.png"
 
         return JsonResponse(
             {
@@ -188,7 +223,6 @@ def clients_manager(request):
                 {"success": False, "message": "Client not found"}, status=404
             )
 
-    # GET request
     clients = Clients.objects.all()
     plans = Plans.objects.all()
     return render(
@@ -200,39 +234,110 @@ def clients_manager(request):
 
 @login_required(login_url="login")
 def employees_manager(request):
+    import os
+
+    from .settings import MEDIA_ROOT, MEDIA_URL
+
     user = request.user
-    if not user.is_superuser:
-        return redirect("home")
+    if user.permission_level != 1 and user.permission_level != 3:
+        return redirect("home")  # TODO: return permission denied
+
     if request.method == "POST":
-        form = request.POST
-        user_obj = User.objects.get(id=form["user_id"])
-        if form["password"]:
-            if len(form["password"]) < 10 or not re.search(
-                r"[!@#$%&*]", form["password"]
-            ):
-                raise ValidationError(
-                    "Password must be at least 10 characters long and contain special characters [!@#$%&*]."
+        data = request.POST
+        files = request.FILES
+        user_id = data.get("user_id")
+        name = data.get("name")
+        email = data.get("email")
+        phone = data.get("phone")
+        permission = data.get("permission")
+        situation = data.get("situation")
+        password = data.get("password")
+        username = data.get("email").split("@")[0]
+        profile_pic = files.get("profile_pic")
+
+        user_obj = (
+            Employees.objects.filter(id=user_id).first() if user_id else Employees()
+        )
+
+        if password:
+            if len(password) < 10 or not re.search(r"[!@#$%&*]", password):
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "message": "Password must be at least 10 characters long and contain special characters [!@#$%&*].",
+                    }
                 )
             else:
-                user_obj.set_password(form["password"])
-                user_obj.save()
-        if not form["first_name"] or not form["email"]:
-            raise ValidationError("First name and email are required.")
-        user_obj.first_name = form["first_name"]
-        user_obj.email = form["email"]
-        user_obj.phone = form["phone"]
+                user_obj.password = make_password(password)
+        elif not password and not user_id:
+            print(password)
+            return JsonResponse(
+                {"success": False, "message": "You must provide a password."}
+            )
+
+        if not name or not email:
+            return JsonResponse(
+                {"success": False, "message": "Name and email are required."}
+            )
+
+        user_obj.name = name
+        user_obj.email = email
+        user_obj.phone = phone
+        user_obj.permission_level = permission
+        user_obj.active = situation
+        user_obj.username = username
         user_obj.save()
-        profile_pic = request.FILES.get("profile_pic")
         if profile_pic:
-            profile_pic.name = f"profile_pic_{form['user_id']}.jpg"
-            if user_obj.profile_picture:
+            folder = f"profile_picture/user_{user_obj.id}"
+            image_name = f"{folder}/profile_pic.jpg"
+
+            if user_obj.profile_picture and default_storage.exists(
+                user_obj.profile_picture.name
+            ):
+                if user_obj.profile_picture != "profile_picture/default.png":
+                    default_storage.delete(user_obj.profile_picture.name)
+
+            saved_path = default_storage.save(image_name, profile_pic)
+            user_obj.profile_picture = saved_path
+            user_obj.save()
+
+        return JsonResponse(
+            {
+                "success": True,
+                "message": "Client created/updated, reloading the page...",
+            }
+        )
+
+    elif request.method == "DELETE":
+        data = json.loads(request.body)
+        try:
+            user_obj = Employees.objects.get(id=data["employeeId"])
+            if (
+                user_obj.profile_picture
+                and user_obj.profile_picture.name != "profile_picture/default.png"
+            ):
                 if default_storage.exists(user_obj.profile_picture.name):
                     default_storage.delete(user_obj.profile_picture.name)
-            user_obj.profile_picture = profile_pic
-            user_obj.save()
-        return redirect("employees_manager")
-    users = User.objects.all()
-    return render(request, "employees_manager.html", {"user": user, "Users": users})
+                    os.rmdir(
+                        os.path.join(
+                            MEDIA_ROOT,
+                            os.path.dirname(user_obj.profile_picture.name),
+                        )
+                    )
+            user_obj.delete()
+            return JsonResponse({"success": True, "message": "Employee deleted!"})
+        except:
+            return JsonResponse(
+                {"success": False, "message": "Employee not found"}, status=404
+            )
+
+    employees = Employees.objects.all()
+    plans = Plans.objects.all()
+    return render(
+        request,
+        "employees_manager.html",
+        {"Plans": plans, "Employees": employees, "MEDIA_URL": MEDIA_URL},
+    )
 
 
 @login_required(login_url="login")

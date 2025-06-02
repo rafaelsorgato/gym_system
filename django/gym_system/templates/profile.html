@@ -8,35 +8,29 @@
         <div class="col-md-10 col-lg-8">
             <div class="card shadow-lg border-0 rounded-4">
                 <div class="card-body p-5">
-                    <h2 class="text-center mb-4 text-primary">User Profile</h2>
+                    <h2 class="text-center mb-4 text-primary">Profile</h2>
+                    <br>
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         <div class="row">
                             <!-- Column 1 -->
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="first_name" class="form-label">Name</label>
-                                    <input type="text" class="form-control" value="{{ user.first_name }}" id="first_name" name="first_name" required>
+                                    <label for="name" class="form-label">Name</label>
+                                    <input type="text" class="form-control" value="{{ user.name }}" id="name" name="name" required>
                                 </div>
-                                <div class="mb-3">
-                                    <label for="username" class="form-label">Username</label>
-                                    <input type="text" class="form-control" value="{{ user.username }}" id="username" name="username" disabled>
-                                </div>
-                            </div>
-
-                            <!-- Column 2 -->
-                            <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="email" class="form-label">Email</label>
                                     <input type="email" class="form-control" value="{{ user.email }}" id="email" name="email" required>
                                 </div>
+                            </div>
+                            <!-- Column 2 -->
+                            <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="phone" class="form-label">Phone</label>
                                     <input type="tel" class="form-control" value="{{ user.phone }}" id="phone" name="phone">
                                 </div>
-                            </div>
-                            <div class="col-md-12">
-                                <div class="mb-12">
+                                <div class="mb-3">
                                     <label for="password" class="form-label">Password</label>
                                     <input type="password" class="form-control" id="password" name="password">
                                 </div>
@@ -48,15 +42,15 @@
                             </div>
                             <div class="col-md-6 offset-md-3" style="margin-top: 20px;">
                                 <div class="mb-3 text-center">
-                                    <img src="{{ user.profile_picture.url }}" alt="Profile Picture" class="img-fluid rounded-circle mb-3" style="width: 150px; height: 150px;">
+                                    <img id='profile_picture' src="{{ MEDIA_URL }}{{ user.profile_picture }}" alt="Profile Picture" class="img-fluid rounded-circle mb-3" style="width: 150px; height: 150px;">
                                     <input type="file" class="form-control" id="profile_pic" name="profile_pic" accept="image/*">
                                     <label for="profile_pic" class="form-label">Profile Picture</label>
                                 </div>
                             </div>
                         </div>
-
-                        <div class="d-grid mt-4 offset-md-5">
-                            <button type="submit" class="btn btn-primary btn-lg">Update</button>
+                        <div id="feedback-message" class="alert d-none text-center" role="alert"></div>
+                        <div class="d-flex justify-content-center mt-4 gap-3">
+                            <button class="btn btn-primary btn-lg" id="update">Update</button>
                         </div>
                     </form>
                 </div>
@@ -64,5 +58,53 @@
         </div>
     </div>
 </div>
+
+<script>
+
+</script>
+<script>
+
+    document.getElementById('update').addEventListener('click', function(event){
+        event.preventDefault();
+        const formData = new FormData();
+        formData.append('name', document.getElementById('name').value);
+        formData.append('email', document.getElementById('email').value);
+        formData.append('phone', document.getElementById('phone').value);
+        formData.append('password', document.getElementById('password').value);
+        formData.append('profile_pic', document.getElementById('profile_pic').files[0]);
+        fetch('/profile', {
+            method:'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            showFeedbackMessage(data.message, data.success);
+            if (data.success) {
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+            }
+        })
+        .catch(error => {
+        showFeedbackMessage("Error while updating.", false);
+    });
+});
+
+function showFeedbackMessage(message, success) {
+    const messageBox = document.getElementById('feedback-message');
+    messageBox.className = `alert text-center ${success ? 'alert-success' : 'alert-danger'}`;
+    messageBox.textContent = message;
+    messageBox.classList.remove('d-none');
+    setTimeout(() => {
+        messageBox.classList.add('d-none');
+    }, 2000);
+}
+
+
+</script>
+
 
 {% endblock %}

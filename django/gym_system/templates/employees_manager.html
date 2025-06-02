@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
-{% block title %}Clients manager{% endblock %}
-{% block dashboard_name %}Clients manager{% endblock %}
+{% block title %}Employees manager{% endblock %}
+{% block dashboard_name %}Employees manager{% endblock %}
 {% block body %}
 
 <div class="container py-5">
@@ -8,42 +8,52 @@
         <div class="col-md-10 col-lg-8">
             <div class="card shadow-lg border-0 rounded-4">
                 <div class="card-body p-5">
-                    <h2 class="text-center mb-4 text-primary">Clients Profiles</h2>
-                    <select name="selected_user" id="userSelect" class="form-select">
-                        {% for user in Users %}
-                            <option value="{{ user.id }}" {% if user.id == request.user.id %}selected{% endif %}>
-                                {{ user.first_name }}
+                    <h2 class="text-center mb-4 text-primary">Employees Profiles</h2>
+                    <select name="selected_employee" id="employeeSelect" class="form-control" >
+                            <option value="">Create a new employee</option>
+                        {% for employee in Employees %}
+                            <option value="{{ employee.id }}">
+                                {{ employee.name }}
                             </option>
                         {% endfor %}
                     </select>
+                    <br>
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
-                        <input type="hidden" id="user_id" name="user_id" value="{{ request.user.id }}">
                         <div class="row">
                             <!-- Column 1 -->
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="first_name" class="form-label">Name</label>
-                                    <input type="text" class="form-control" value="{{ user.first_name }}" id="first_name" name="first_name" required>
+                                    <label for="name" class="form-label">Name</label>
+                                    <input type="text" class="form-control" value="" id="name" name="name" required>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="username" class="form-label">Username</label>
-                                    <input type="text" class="form-control" value="{{ user.username }}" id="username" name="username" disabled>
+                                    <label for="permission" class="form-label">Permission</label>
+                                    <select name="permission" id="permission" class="form-control">
+                                            <option value="1">Recepcionist</option>
+                                            <option value="2">Trainer</option>
+                                            <option value="3">Manager</option>
+                                    </select>
+                                </div>
+                                 <div class="mb-3">
+                                    <label for="situation" class="form-label">Situation</label>
+                                    <select name="situation" id="situation" class="form-control">
+                                        <option value="True">Active</option>
+                                        <option value="False">Inactive</option>
+                                    </select>
                                 </div>
                             </div>
                             <!-- Column 2 -->
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="email" class="form-label">Email</label>
-                                    <input type="email" class="form-control" value="{{ user.email }}" id="email" name="email" required>
+                                    <input type="email" class="form-control" value="" id="email" name="email" required>
                                 </div>
                                 <div class="mb-3">
                                     <label for="phone" class="form-label">Phone</label>
-                                    <input type="tel" class="form-control" value="{{ user.phone }}" id="phone" name="phone">
+                                    <input type="tel" class="form-control" value="" id="phone" name="phone">
                                 </div>
-                            </div>
-                            <div class="col-md-12">
-                                <div class="mb-12">
+                                <div class="mb-3">
                                     <label for="password" class="form-label">Password</label>
                                     <input type="password" class="form-control" id="password" name="password">
                                 </div>
@@ -55,14 +65,16 @@
                             </div>
                             <div class="col-md-6 offset-md-3" style="margin-top: 20px;">
                                 <div class="mb-3 text-center">
-                                    <img id='profile_picture' src="{{ user.profile_picture.url }}" alt="Profile Picture" class="img-fluid rounded-circle mb-3" style="width: 150px; height: 150px;">
+                                    <img id='profile_picture' src="{{ MEDIA_URL }}profile_picture/default.png" alt="Profile Picture" class="img-fluid rounded-circle mb-3" style="width: 150px; height: 150px;">
                                     <input type="file" class="form-control" id="profile_pic" name="profile_pic" accept="image/*">
                                     <label for="profile_pic" class="form-label">Profile Picture</label>
                                 </div>
                             </div>
                         </div>
-                        <div class="d-grid mt-4 offset-md-5">
-                            <button type="submit" class="btn btn-primary btn-lg">Update</button>
+                        <div id="feedback-message" class="alert d-none text-center" role="alert"></div>
+                        <div class="d-flex justify-content-center mt-4 gap-3">
+                            <button class="btn btn-primary btn-lg" id="update">Create</button>
+                            <button class="btn btn-danger btn-lg d-none" id="delete">Delete</button>
                         </div>
                     </form>
                 </div>
@@ -72,37 +84,128 @@
 </div>
 
 <script>
-    const usersData = {
-        {% for user in Users %}
-            "{{ user.id }}": {
-                "first_name": "{{ user.first_name|escapejs }}",
-                "username": "{{ user.username|escapejs }}",
-                "email": "{{ user.email|escapejs }}",
-                "phone": "{{ user.phone|escapejs }}",
-                "profile_picture": "{{ user.profile_picture.url|escapejs }}"
+    const employeesData = {
+        {% for employee in Employees %}
+            "{{ employee.id }}": {
+                "name": "{{ employee.name|escapejs }}",
+                "last_name": "{{ employee.last_name|escapejs }}",
+                "email": "{{ employee.email|escapejs }}",
+                "phone": "{{ employee.phone|escapejs }}",
+                "profile_picture": "{{ MEDIA_URL }}{{ employee.profile_picture }}",
+                "permission_level": "{{ employee.permission_level }}",
+                "situation": "{{ employee.is_active }}"
             },
         {% endfor %}
     };
 </script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const userSelect = document.getElementById('userSelect');
+        const employeeSelect = document.getElementById('employeeSelect');
 
-        userSelect.addEventListener('change', function () {
+        employeeSelect.addEventListener('change', function () {
             const selectedId = this.value;
-            const user = usersData[selectedId];
-
-            if (user) {
-                document.getElementById('first_name').value = user.first_name;
-                document.getElementById('username').value = user.username;
-                document.getElementById('email').value = user.email;
-                document.getElementById('phone').value = user.phone;
-                document.getElementById('profile_picture').src = user.profile_picture;
+            const employee = employeesData[selectedId];
+            if (employee) {
+                document.getElementById('name').value = employee.name;
+                document.getElementById('permission').value = employee.permission_level;
+                document.getElementById('email').value = employee.email;
+                document.getElementById('phone').value = employee.phone;
+                document.getElementById('situation').value = employee.situation;
+                document.getElementById('profile_picture').src = employee.profile_picture;
+                document.getElementById('update').textContent = "Update";
+                document.getElementById('delete').classList.remove('d-none');
             }
-            document.getElementById('user_id').value = selectedId;
+            else{
+                document.getElementById('name').value = '';
+                document.getElementById('permission').value = '';
+                document.getElementById('email').value = '';
+                document.getElementById('phone').value = '';
+                document.getElementById('situation').value = '';
+                document.getElementById('profile_picture').src = "{{ MEDIA_URL }}profile_picture/default.png";
+                document.getElementById('update').textContent = "Create";
+                document.getElementById('delete').classList.add('d-none');
 
+            }
         });
     });
+
+    document.getElementById('update').addEventListener('click', function(event){
+        event.preventDefault();
+        const formData = new FormData();
+        formData.append('user_id', document.getElementById('employeeSelect').value);
+        formData.append('name', document.getElementById('name').value);
+        formData.append('permission', document.getElementById('permission').value);
+        formData.append('email', document.getElementById('email').value);
+        formData.append('phone', document.getElementById('phone').value);
+        formData.append('situation', document.getElementById('situation').value);
+        formData.append('password', document.getElementById('password').value);
+        formData.append('profile_pic', document.getElementById('profile_pic').files[0]);
+        fetch('/employees_manager', {
+            method:'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            showFeedbackMessage(data.message, data.success);
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        })
+        .catch(error => {
+        showFeedbackMessage("Error while updating/creating client.", false);
+    });
+    })
+
+document.getElementById('delete').addEventListener('click', function(event){
+    event.preventDefault();
+    const employeeId = document.getElementById('employeeSelect').value;
+    if (!employeeId) {
+        showFeedbackMessage("Please select an employee to delete.", false);
+        return;
+    }
+    fetch('/employees_manager', {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ 'employeeId': employeeId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        showFeedbackMessage(data.message, data.success);
+        if (data.success) {
+            document.getElementById('name').value = '';
+            document.getElementById('plan').value = '';
+            document.getElementById('email').value = '';
+            document.getElementById('phone').value = '';
+            document.getElementById('situation').value = '';
+            document.getElementById('profile_picture').src = "{{ MEDIA_URL }}profile_picture/default.png";
+            document.getElementById('update').textContent = "Create";
+            document.getElementById('delete').classList.add('d-none');
+            const select = document.getElementById('employeeSelect');
+            select.remove(select.selectedIndex);
+
+        }
+    })
+    .catch(error => {
+        showFeedbackMessage("Error while deleting employee.", false);
+    });
+});
+
+function showFeedbackMessage(message, success) {
+    const messageBox = document.getElementById('feedback-message');
+    messageBox.className = `alert text-center ${success ? 'alert-success' : 'alert-danger'}`;
+    messageBox.textContent = message;
+    messageBox.classList.remove('d-none');
+    setTimeout(() => {
+        messageBox.classList.add('d-none');
+    }, 2000);
+}
+
 
 </script>
 
