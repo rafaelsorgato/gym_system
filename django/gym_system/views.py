@@ -1,4 +1,6 @@
 import json
+import os
+import re
 
 from django.contrib.auth import authenticate
 from django.contrib.auth import login as auth_login
@@ -12,6 +14,7 @@ from django.shortcuts import redirect, render
 
 from .forms import *
 from .models import *
+from .settings import MEDIA_ROOT, MEDIA_URL
 
 app_name = "gym_system"
 
@@ -48,10 +51,6 @@ def logout(request):
 
 @login_required(login_url="login")
 def profile(request):
-    import os
-
-    from .settings import MEDIA_ROOT, MEDIA_URL
-
     user = request.user
 
     if request.method == "POST":
@@ -113,25 +112,11 @@ def profile(request):
     )
 
 
-import re
-
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.hashers import make_password
-from django.core.files.storage import default_storage
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, redirect, render
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
-
-
 @login_required(login_url="login")
 def clients_manager(request):
-    import os
-
-    from .settings import MEDIA_ROOT, MEDIA_URL
 
     user = request.user
-    if user.permission_level != 1 and user.permission_level != 3:
+    if user.permission_level not in [1, 3]:
         return redirect("home")  # TODO: return permission denied
 
     if request.method == "POST":
@@ -234,12 +219,8 @@ def clients_manager(request):
 
 @login_required(login_url="login")
 def employees_manager(request):
-    import os
-
-    from .settings import MEDIA_ROOT, MEDIA_URL
-
     user = request.user
-    if user.permission_level != 1 and user.permission_level != 3:
+    if user.permission_level not in [1, 3]:
         return redirect("home")  # TODO: return permission denied
 
     if request.method == "POST":
@@ -392,3 +373,32 @@ def plans(request):
             )
 
     return render(request, "plans.html", {"plans": Plans.objects.all()})
+
+
+@login_required(login_url="login")
+def statistics(request):
+
+    user = request.user
+    if user.permission_level not in [1, 3]:
+        return redirect("home")  # TODO: return permission denied
+
+    clients = Clients.objects.all()
+    plans = Plans.objects.all()
+    return render(
+        request,
+        "statistics.html",
+        {"Plans": plans, "Clients": clients, "MEDIA_URL": MEDIA_URL},
+    )
+
+
+@login_required(login_url="login")
+def checkins(request, client_id):
+    # TODO finish this view
+    user = request.user
+    if user.permission_level not in [1, 3]:
+        return redirect("home")  # TODO: return permission denied
+
+    user_checkings = TrainingSession.objects.filter(client=client_id).order_by(
+        "-check_in_time"
+    )
+    return JsonResponse(list(user_checkings.values()), safe=False)

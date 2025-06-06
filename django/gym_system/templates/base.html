@@ -31,62 +31,34 @@
             <!-- Divider -->
             <hr class="sidebar-divider my-0">
 
-            <!-- Nav Item - Dashboard -->
-            <li class="nav-item active">
-                <a class="nav-link" href="index.html">
-                    <i class="fas fa-fw fa-tachometer-alt"></i>
-                    <span>Dashboard</span></a>
-            </li>
-
-
-            <!-- Divider -->
-            <hr class="sidebar-divider">
-
             <!-- Heading -->
             <div class="sidebar-heading">
                 Addons
             </div>
 
-            <!-- Nav Item - Pages Collapse Menu -->
-            <li class="nav-item">
-                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsePages"
-                    aria-expanded="true" aria-controls="collapsePages">
-                    <i class="fas fa-fw fa-folder"></i>
-                    <span>Pages</span>
-                </a>
-                <div id="collapsePages" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
-                    <div class="bg-white py-2 collapse-inner rounded">
-                    <a class="collapse-item" href="{% url 'clients_manager' %}">Create/delete client</a>
-                    <a class="collapse-item" href="{% url 'employees_manager' %}">Create/delete employee</a>
-                        <a class="collapse-item" href="register.html">Edit a user</a>
-                        <a class="collapse-item" href="register.html">Edit a employee</a>
-                    </div>
-                </div>
-            </li>
-
             <!-- Nav Item - Plans -->
             <li class="nav-item">
                 <a class="nav-link" href="{% url 'plans' %}">
-                    <i class="fas fa-fw fa-chart-area"></i>
+                    <i class="fas fa-fw fa-cart-plus"></i>
                     <span>Plans</span></a>
             </li>
             <!-- Nav Item - Clients -->
             <li class="nav-item">
                 <a class="nav-link" href="{% url 'clients_manager' %}">
-                    <i class="fas fa-fw fa-chart-area"></i>
+                    <i class="fas fa-fw fa-user"></i>
                     <span>Clients</span></a>
             </li>
-                        <!-- Nav Item - Employees -->
+             <!-- Nav Item - Employees -->
             <li class="nav-item">
                 <a class="nav-link" href="{% url 'employees_manager' %}">
-                    <i class="fas fa-fw fa-chart-area"></i>
+                    <i class="fas fa-fw fa-address-card"></i>
                     <span>Employees</span></a>
             </li>
-            <!-- Nav Item - Tables -->
+            <!-- Nav Item - Statistics -->
             <li class="nav-item">
-                <a class="nav-link" href="tables.html">
-                    <i class="fas fa-fw fa-table"></i>
-                    <span>Tables</span></a>
+                <a class="nav-link" href="{% url 'statistics' %}">
+                    <i class="fas fa-fw fa-chart-area"></i>
+                    <span>Statistics</span></a>
             </li>
 
             <!-- Divider -->

@@ -30,4 +30,6 @@ urlpatterns = [
     path("clients_manager", views.clients_manager, name="clients_manager"),
     path("employees_manager", views.employees_manager, name="employees_manager"),
     path("plans", views.plans, name="plans"),
+    path("statistics", views.statistics, name="statistics"),
+    path("checkins/<int:client_id>", views.checkins, name="checkins"),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -42,6 +42,6 @@ class Employees(AbstractUser):
 
 class TrainingSession(models.Model):
     id = models.AutoField(primary_key=True)
-    member = models.ForeignKey(Clients, on_delete=models.CASCADE)
+    client = models.ForeignKey(Clients, on_delete=models.CASCADE)
     check_in_time = models.DateTimeField(auto_now_add=True)
     check_out_time = models.DateTimeField(null=True, blank=True)
