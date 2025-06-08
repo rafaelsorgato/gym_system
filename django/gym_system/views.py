@@ -11,6 +11,11 @@ from django.contrib.auth.hashers import make_password
 from django.core.files.storage import default_storage
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
+from django.db.models.functions import TruncDate
+import random
+from datetime import datetime, timedelta
+from gym_system.models import Clients, TrainingSession
+from django.utils import timezone
 
 from .forms import *
 from .models import *
@@ -401,4 +406,82 @@ def checkins(request, client_id):
     user_checkings = TrainingSession.objects.filter(client=client_id).order_by(
         "-check_in_time"
     )
-    return JsonResponse(list(user_checkings.values()), safe=False)
+
+    days_attended = (
+        user_checkings.annotate(day=TruncDate("check_in_time")).values("day").distinct()
+    )
+
+    total_days = days_attended.count()
+
+    if total_days == 0:
+        average = 0
+    else:
+        first_date = user_checkings.earliest("check_in_time").check_in_time.date()
+        last_date = user_checkings.latest("check_in_time").check_in_time.date()
+
+        delta_days = (last_date - first_date).days
+        total_weeks = int(max(1, delta_days / 7))
+        average = round((total_days / total_weeks), 2)
+
+    return JsonResponse(
+        {
+            "checkings": list(user_checkings.values()),
+            "average": average,
+            "total_days": total_days,
+            "total_weeks": round(total_weeks, 2),
+        },
+        safe=False,
+    )
+
+
+def testes(request):
+
+
+    TOTAL = 100
+
+    profiles = {
+        1: {"days_per_week": 1, "min_minutes": 10, "max_minutes": 30},
+        2: {"days_per_week": 3, "min_minutes": 30, "max_minutes": 60},
+        3: {"days_per_week": 5, "min_minutes": 45, "max_minutes": 120},
+    }
+
+    start_date = timezone.now() - timedelta(weeks=52)
+    end_date = timezone.now()
+
+    sessions_created = 0
+    while sessions_created < TOTAL:
+        for client_id, profile in profiles.items():
+            if random.randint(1, 7) <= profile["days_per_week"]:
+                random_days = random.randint(0, (end_date - start_date).days)
+                random_date = start_date + timedelta(days=random_days)
+
+                random_hour = random.randint(7, 22) 
+                random_minute = random.randint(0, 59)
+                check_out_time = datetime(
+                    year=random_date.year,
+                    month=random_date.month,
+                    day=random_date.day,
+                    hour=random_hour,
+                    minute=random_minute,
+                )
+                check_out_time = timezone.make_aware(check_out_time)
+
+                duration_minutes = random.randint(
+                    profile["min_minutes"], profile["max_minutes"]
+                )
+                check_in_time = check_out_time - timedelta(minutes=duration_minutes)
+
+                if check_in_time.date() != check_out_time.date():
+                    continue
+
+                TrainingSession.objects.create(
+                    client=Clients.objects.get(id=client_id),
+                    check_in_time=check_in_time,
+                    check_out_time=check_out_time,
+                )
+                sessions_created += 1
+
+                if sessions_created >= TOTAL:
+                    break
+
+    print(f"{sessions_created} sessões criadas com sucesso.")
